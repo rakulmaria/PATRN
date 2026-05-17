@@ -1,4 +1,11 @@
-# PATRN
+```
+██████╗  █████╗ ████████╗██████╗ ███╗   ██╗  ✦
+██╔══██╗██╔══██╗╚══██╔══╝██╔══██╗████╗  ██║
+██████╔╝███████║   ██║   ██████╔╝██╔██╗ ██║
+██╔═══╝ ██╔══██║   ██║   ██╔══██╗██║╚██╗██║
+██║     ██║  ██║   ██║   ██║  ██║██║ ╚████║
+╚═╝     ╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═══╝
+```
 
 A canvas-based perler bead pattern designer built for iPad. Pick a color, paint cells, build a pattern — then use it as a reference while placing real beads on a pegboard.
 
