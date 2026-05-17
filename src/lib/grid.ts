@@ -12,9 +12,15 @@ export function coordsToIndex(
   rect: DOMRect,
   rows: number,
   cols: number,
+  // Left/top margin in CSS pixels (e.g. the axis label area).
+  // Clicks inside the margin return null.
+  offset = 0,
 ): number | null {
-  const col = Math.floor(((clientX - rect.left) / rect.width) * cols)
-  const row = Math.floor(((clientY - rect.top) / rect.height) * rows)
+  const x = clientX - rect.left - offset
+  const y = clientY - rect.top - offset
+  if (x < 0 || y < 0) return null
+  const col = Math.floor((x / (rect.width - offset)) * cols)
+  const row = Math.floor((y / (rect.height - offset)) * rows)
   if (row < 0 || row >= rows || col < 0 || col >= cols) return null
   return cellIndex(row, col, cols)
 }

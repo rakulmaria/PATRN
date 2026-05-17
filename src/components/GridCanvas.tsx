@@ -1,13 +1,16 @@
-import { useEffect, useRef, useCallback } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useRef, useCallback } from 'react'
 import { useGridStore } from '../store'
-import { renderGrid } from '../lib/renderer'
+import { renderGrid, AXIS_LABEL_SIZE } from '../lib/renderer'
 import { coordsToIndex } from '../lib/grid'
 
-export function GridCanvas() {
+export const GridCanvas = forwardRef<HTMLCanvasElement>(function GridCanvas(_, ref) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const isDrawingRef = useRef(false)
 
   const { grid, rows, cols } = useGridStore()
+
+  // Expose the raw canvas element to the parent (used for PNG export).
+  useImperativeHandle(ref, () => canvasRef.current!, [])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -15,7 +18,6 @@ export function GridCanvas() {
     renderGrid(canvas, { grid, rows, cols })
   }, [grid, rows, cols])
 
-  // Re-render on resize (orientation change, window resize)
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -32,13 +34,14 @@ export function GridCanvas() {
     const canvas = canvasRef.current
     if (!canvas) return
     const { tool, rows, cols, paintCell, eraseCell } = useGridStore.getState()
-    const index = coordsToIndex(clientX, clientY, canvas.getBoundingClientRect(), rows, cols)
+    const index = coordsToIndex(clientX, clientY, canvas.getBoundingClientRect(), rows, cols, AXIS_LABEL_SIZE)
     if (index === null) return
     tool === 'erase' ? eraseCell(index) : paintCell(index)
   }, [])
 
   const onMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     isDrawingRef.current = true
+    useGridStore.getState().beginStroke()
     applyTool(e.clientX, e.clientY)
   }, [applyTool])
 
@@ -52,6 +55,7 @@ export function GridCanvas() {
   const onTouchStart = useCallback((e: TouchEvent) => {
     e.preventDefault()
     isDrawingRef.current = true
+    useGridStore.getState().beginStroke()
     applyTool(e.touches[0].clientX, e.touches[0].clientY)
   }, [applyTool])
 
@@ -85,4 +89,4 @@ export function GridCanvas() {
       onMouseLeave={stopDrawing}
     />
   )
-}
+})

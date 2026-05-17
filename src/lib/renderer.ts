@@ -4,7 +4,13 @@ export interface RenderState {
   cols: number
 }
 
+// Margin reserved for axis labels on the left and top of the canvas.
+// Exported so coordsToIndex can subtract it before mapping to cell indices.
+export const AXIS_LABEL_SIZE = 20
+
 const GRID_LINE_COLOR = '#374151'
+const LABEL_COLOR = '#6b7280'
+const LABEL_FONT = '9px system-ui'
 
 export function renderGrid(canvas: HTMLCanvasElement, state: RenderState): void {
   const { grid, rows, cols } = state
@@ -12,8 +18,7 @@ export function renderGrid(canvas: HTMLCanvasElement, state: RenderState): void 
   const logicalW = canvas.clientWidth
   const logicalH = canvas.clientHeight
 
-  // Resize the backing store only when dimensions change to avoid clearing a
-  // frame that doesn't need it.
+  // Resize backing store only when dimensions actually change.
   const physW = Math.round(logicalW * dpr)
   const physH = Math.round(logicalH * dpr)
   if (canvas.width !== physW || canvas.height !== physH) {
@@ -26,34 +31,61 @@ export function renderGrid(canvas: HTMLCanvasElement, state: RenderState): void 
   ctx.scale(dpr, dpr)
   ctx.clearRect(0, 0, logicalW, logicalH)
 
-  const cellW = logicalW / cols
-  const cellH = logicalH / rows
+  const ox = AXIS_LABEL_SIZE  // grid origin x (left margin)
+  const oy = AXIS_LABEL_SIZE  // grid origin y (top margin)
+  const gridW = logicalW - ox
+  const gridH = logicalH - oy
+  const cellW = gridW / cols
+  const cellH = gridH / rows
 
+  // --- Cell fills ---
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
       const color = grid[row * cols + col]
       if (color) {
         ctx.fillStyle = color
-        ctx.fillRect(col * cellW, row * cellH, cellW, cellH)
+        ctx.fillRect(ox + col * cellW, oy + row * cellH, cellW, cellH)
       }
     }
   }
 
-  // Draw grid lines after fills so they're always visible
+  // --- Grid lines (drawn after fills so they're always visible) ---
   ctx.strokeStyle = GRID_LINE_COLOR
   ctx.lineWidth = 0.5
   ctx.beginPath()
   for (let col = 0; col <= cols; col++) {
-    const x = col * cellW
-    ctx.moveTo(x, 0)
-    ctx.lineTo(x, logicalH)
+    const x = ox + col * cellW
+    ctx.moveTo(x, oy)
+    ctx.lineTo(x, oy + gridH)
   }
   for (let row = 0; row <= rows; row++) {
-    const y = row * cellH
-    ctx.moveTo(0, y)
-    ctx.lineTo(logicalW, y)
+    const y = oy + row * cellH
+    ctx.moveTo(ox, y)
+    ctx.lineTo(ox + gridW, y)
   }
   ctx.stroke()
+
+  // --- Axis labels ---
+  ctx.fillStyle = LABEL_COLOR
+  ctx.font = LABEL_FONT
+  ctx.textBaseline = 'middle'
+
+  // Column numbers across the top — skip labels that would overlap neighbours.
+  // "29" at 9px ≈ 13px wide; safe to show all when cellW >= 14.
+  const colStep = cellW < 14 ? 5 : 1
+  ctx.textAlign = 'center'
+  for (let col = 0; col < cols; col++) {
+    if (col !== 0 && col !== cols - 1 && col % colStep !== 0) continue
+    ctx.fillText(String(col + 1), ox + col * cellW + cellW / 2, oy / 2)
+  }
+
+  // Row numbers down the left side.
+  const rowStep = cellH < 14 ? 5 : 1
+  ctx.textAlign = 'right'
+  for (let row = 0; row < rows; row++) {
+    if (row !== 0 && row !== rows - 1 && row % rowStep !== 0) continue
+    ctx.fillText(String(row + 1), ox - 3, oy + row * cellH + cellH / 2)
+  }
 
   ctx.restore()
 }
