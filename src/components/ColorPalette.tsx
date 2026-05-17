@@ -6,19 +6,20 @@ interface ColorPaletteProps {
 }
 
 export function ColorPalette({ onExport }: ColorPaletteProps) {
-  // Fine-grained selectors: palette only re-renders when these specific values change,
-  // not on every grid paint.
-  const activeColor = useGridStore(s => s.activeColor)
-  const tool       = useGridStore(s => s.tool)
-  const canUndo    = useGridStore(s => s.past.length > 0)
-  const canRedo    = useGridStore(s => s.future.length > 0)
-  const setActiveColor = useGridStore(s => s.setActiveColor)
-  const setTool        = useGridStore(s => s.setTool)
-  const clearGrid      = useGridStore(s => s.clearGrid)
-  const undo           = useGridStore(s => s.undo)
-  const redo           = useGridStore(s => s.redo)
+  const activeColor  = useGridStore(s => s.activeColor)
+  const tool         = useGridStore(s => s.tool)
+  const pencilOnly   = useGridStore(s => s.pencilOnly)
+  const canUndo      = useGridStore(s => s.past.length > 0)
+  const canRedo      = useGridStore(s => s.future.length > 0)
+  const setActiveColor  = useGridStore(s => s.setActiveColor)
+  const setTool         = useGridStore(s => s.setTool)
+  const setPencilOnly   = useGridStore(s => s.setPencilOnly)
+  const clearGrid       = useGridStore(s => s.clearGrid)
+  const undo            = useGridStore(s => s.undo)
+  const redo            = useGridStore(s => s.redo)
 
   const toolBtn = 'w-11 h-11 rounded-lg border-2 border-gray-600 bg-gray-800 text-gray-400 text-sm font-medium transition-colors active:bg-gray-700 disabled:opacity-30'
+  const activeToolBtn = 'w-11 h-11 rounded-lg border-2 border-white bg-white text-gray-900 text-sm font-bold transition-colors'
 
   return (
     <div className="flex items-center">
@@ -38,17 +39,21 @@ export function ColorPalette({ onExport }: ColorPaletteProps) {
         <div className="w-px h-8 bg-gray-700" />
 
         <button
-          className={[
-            'w-11 h-11 rounded-lg border-2 text-sm font-bold transition-colors',
-            tool === 'erase'
-              ? 'border-white bg-white text-gray-900'
-              : 'border-gray-600 bg-gray-800 text-gray-400 active:bg-gray-700',
-          ].join(' ')}
+          className={tool === 'erase' ? activeToolBtn : toolBtn}
           onClick={() => setTool(tool === 'erase' ? 'paint' : 'erase')}
           aria-label="Eraser"
           aria-pressed={tool === 'erase'}
         >
           ✕
+        </button>
+
+        <button
+          className={pencilOnly ? activeToolBtn : toolBtn}
+          onClick={() => setPencilOnly(!pencilOnly)}
+          aria-label="Pencil only mode"
+          aria-pressed={pencilOnly}
+        >
+          ✏
         </button>
 
         <button className={toolBtn} onClick={clearGrid} aria-label="Clear grid">Clr</button>

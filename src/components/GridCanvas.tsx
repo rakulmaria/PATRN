@@ -9,7 +9,6 @@ export const GridCanvas = forwardRef<HTMLCanvasElement>(function GridCanvas(_, r
 
   const { grid, rows, cols } = useGridStore()
 
-  // Expose the raw canvas element to the parent (used for PNG export).
   useImperativeHandle(ref, () => canvasRef.current!, [])
 
   useEffect(() => {
@@ -28,8 +27,6 @@ export const GridCanvas = forwardRef<HTMLCanvasElement>(function GridCanvas(_, r
     return () => observer.disconnect()
   }, [])
 
-  // Reads fresh state from the store so touch/mouse callbacks are stable
-  // references and don't need to be re-registered on every color/tool change.
   const applyTool = useCallback((clientX: number, clientY: number) => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -39,54 +36,35 @@ export const GridCanvas = forwardRef<HTMLCanvasElement>(function GridCanvas(_, r
     tool === 'erase' ? eraseCell(index) : paintCell(index)
   }, [])
 
-  const onMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+  const onPointerDown = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+    const { pencilOnly, beginStroke } = useGridStore.getState()
+    // In pencil-only mode, ignore finger input but still allow pen and mouse
+    // (mouse keeps desktop dev working).
+    if (pencilOnly && e.pointerType === 'touch') return
+    e.currentTarget.setPointerCapture(e.pointerId)
     isDrawingRef.current = true
-    useGridStore.getState().beginStroke()
+    beginStroke()
     applyTool(e.clientX, e.clientY)
   }, [applyTool])
 
-  const onMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+  const onPointerMove = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!isDrawingRef.current) return
+    if (useGridStore.getState().pencilOnly && e.pointerType === 'touch') return
     applyTool(e.clientX, e.clientY)
   }, [applyTool])
 
   const stopDrawing = useCallback(() => { isDrawingRef.current = false }, [])
 
-  const onTouchStart = useCallback((e: TouchEvent) => {
-    e.preventDefault()
-    isDrawingRef.current = true
-    useGridStore.getState().beginStroke()
-    applyTool(e.touches[0].clientX, e.touches[0].clientY)
-  }, [applyTool])
-
-  const onTouchMove = useCallback((e: TouchEvent) => {
-    e.preventDefault()
-    applyTool(e.touches[0].clientX, e.touches[0].clientY)
-  }, [applyTool])
-
-  // Touch events need { passive: false } to allow preventDefault — React's
-  // synthetic events don't support this, so we attach them imperatively.
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    canvas.addEventListener('touchstart', onTouchStart, { passive: false })
-    canvas.addEventListener('touchmove', onTouchMove, { passive: false })
-    canvas.addEventListener('touchend', stopDrawing)
-    return () => {
-      canvas.removeEventListener('touchstart', onTouchStart)
-      canvas.removeEventListener('touchmove', onTouchMove)
-      canvas.removeEventListener('touchend', stopDrawing)
-    }
-  }, [onTouchStart, onTouchMove, stopDrawing])
-
+  // touch-none tells the browser not to handle touch gestures (scroll/zoom)
+  // on this element, which lets pointer events fire without preventDefault.
   return (
     <canvas
       ref={canvasRef}
-      className="w-full h-full"
-      onMouseDown={onMouseDown}
-      onMouseMove={onMouseMove}
-      onMouseUp={stopDrawing}
-      onMouseLeave={stopDrawing}
+      className="w-full h-full touch-none"
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={stopDrawing}
+      onPointerCancel={stopDrawing}
     />
   )
 })

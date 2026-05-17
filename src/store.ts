@@ -14,8 +14,10 @@ interface GridStore {
   tool: 'paint' | 'erase'
   past: string[][]
   future: string[][]
+  pencilOnly: boolean
   setActiveColor: (color: string) => void
   setTool: (tool: 'paint' | 'erase') => void
+  setPencilOnly: (v: boolean) => void
   // Call once at the start of each paint/erase gesture — snapshots the current
   // grid into history so the whole stroke is one undo step.
   beginStroke: () => void
@@ -36,9 +38,11 @@ export const useGridStore = create<GridStore>()(
       tool: 'paint' as const,
       past: [],
       future: [],
+      pencilOnly: false,
 
       setActiveColor: (color) => set({ activeColor: color }),
       setTool: (tool) => set({ tool }),
+      setPencilOnly: (pencilOnly) => set({ pencilOnly }),
 
       beginStroke: () => {
         const { grid, past } = get()
@@ -90,12 +94,13 @@ export const useGridStore = create<GridStore>()(
     }),
     {
       name: 'patrn-grid',
-      // Only persist the drawing state — history is session-only, tool resets to paint.
+      // History is session-only. tool resets to paint on reload.
       partialize: (state) => ({
         grid: state.grid,
         rows: state.rows,
         cols: state.cols,
         activeColor: state.activeColor,
+        pencilOnly: state.pencilOnly,
       }),
     },
   ),
