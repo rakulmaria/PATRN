@@ -30,12 +30,12 @@ Holds:
 ```
 grid: string[]        activeColor: string
 rows: number          tool: 'paint' | 'erase'
-cols: number          past: string[][]   // undo history (max 100)
-                      future: string[][]  // redo stack
+cols: number          past: string[][]    // undo history (max 100)
+pencilOnly: boolean   future: string[][]  // redo stack
 ```
-Actions: `setActiveColor`, `setTool`, `beginStroke`, `paintCell`, `eraseCell`, `clearGrid`, `undo`, `redo`.
+Actions: `setActiveColor`, `setTool`, `setPencilOnly`, `beginStroke`, `paintCell`, `eraseCell`, `clearGrid`, `undo`, `redo`.
 
-Persistence: `persist` middleware with `partialize` — only `grid`, `rows`, `cols`, `activeColor` are saved to localStorage. History and tool reset on reload.
+Persistence: `persist` middleware with `partialize` — `grid`, `rows`, `cols`, `activeColor`, and `pencilOnly` are saved to localStorage. History and tool reset on reload.
 
 ### Undo/redo — the `beginStroke` pattern
 `paintCell` and `eraseCell` do NOT push to history. Instead, call `beginStroke()` once at pointer-down; it snapshots the current grid. This makes an entire drag stroke one undo step. `clearGrid` pushes its own snapshot. Max history depth: 100.
@@ -50,8 +50,10 @@ Persistence: `persist` middleware with `partialize` — only `grid`, `rows`, `co
 ### Coordinate math (`src/lib/grid.ts`)
 `coordsToIndex(clientX, clientY, rect, rows, cols, offset = 0)` — `offset` is `AXIS_LABEL_SIZE`. Clicks inside the margin (label area) return `null`.
 
-### Touch events
-Attached imperatively with `{ passive: false }` — React synthetic events can't set this. Registered in a `useEffect` in `GridCanvas`. Callbacks are stable (read fresh state via `useGridStore.getState()`) so listeners never need to re-register on color/tool changes.
+### Input events — Pointer Events API
+All input (finger, pen, mouse) is handled via `onPointerDown`/`onPointerMove`/`onPointerUp`/`onPointerCancel` React synthetic events. `touch-action: none` on the canvas element tells the browser not to scroll/zoom, eliminating the need for `{ passive: false }` or `preventDefault()`. `setPointerCapture` on `pointerdown` keeps events firing even if the pointer drifts outside the canvas.
+
+`pencilOnly` mode: when enabled, events with `pointerType === 'touch'` are ignored (fingers and palms), while `'pen'` (Apple Pencil) and `'mouse'` (desktop dev) still work.
 
 ### Canvas ref / export
 `GridCanvas` is a `forwardRef` component. `App` holds the canvas ref and passes it to `downloadGridAsPng` in `src/lib/export.ts`, which composites the canvas over a white background before exporting (empty cells are transparent in the live canvas but white makes sense in a saved pattern).
@@ -90,15 +92,26 @@ App is a flex column: grid area (`flex-1`) + palette strip (`shrink-0`). The gri
 ### Complete
 1. Canvas grid renderer (retina-aware, offset for axis labels)
 2. Color palette UI — 33 Hama colors, fixed controls + scrollable swatches
-3. Paint on tap and drag (touch + mouse)
+3. Paint on tap and drag (Pointer Events API — finger, pen, mouse)
 4. Erase tool
 5. Clear / reset grid (pushes to undo history)
 6. Export grid as PNG (white background composite)
 7. Undo / redo — `beginStroke` pattern, 100-step history, Cmd/Ctrl+Z / Cmd/Ctrl+Shift+Z
-8. localStorage persistence — grid, dimensions, active color survive reload
+8. localStorage persistence — grid, dimensions, active color, pencilOnly survive reload
 9. Axis labels — column numbers top, row numbers left; auto-thinning for small cells
+10. Pencil-only mode — blocks finger/palm input (`pointerType === 'touch'`), allows Apple Pencil + mouse
 
-### Out of scope for now
+### Future work (prioritised)
+
+1. **Deploy to Vercel** — run `vercel` in the project root. Gives a permanent HTTPS URL, which also unblocks the PNG export share sheet on iOS (currently broken over HTTP).
+
+2. **Configurable grid size** — let the user pick rows × cols (e.g. 16×16, 29×29, 58×58). Key constraint: resizing should never silently overwrite a pattern that is already drawn. Proposed behaviour: if the grid is non-empty, show a confirmation ("This will clear your current pattern") before applying the new size. If the grid is empty, resize immediately. The store already has `rows` and `cols` as separate fields, so a `resizeGrid(rows, cols)` action is straightforward to add.
+
+3. **Pattern nudge / reposition** — a "move" tool that shifts the entire painted pattern by N cells in any direction. Cells that fall outside the grid boundary are clipped (or optionally wrap). Useful when the user finishes a design and realises it is off-centre. Implementation: a translate operation on the flat grid array — pure function, no canvas changes needed.
+
+4. **Light / dark mode toggle** — the canvas background and UI chrome currently assume dark mode. Add a `theme: 'light' | 'dark'` field to the store (persisted), toggle button in the toolbar, and swap Tailwind's `bg-gray-900` / `border-gray-800` / grid-line colour accordingly. The renderer's `GRID_LINE_COLOR` would also need to be theme-aware.
+
+### Permanently out of scope
 - Image import / color quantization
 - Pinch-to-zoom / pan
 - Knitting or cross-stitch modes
