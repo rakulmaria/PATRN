@@ -1,73 +1,78 @@
-# React + TypeScript + Vite
+# PATRN
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A canvas-based perler bead pattern designer built for iPad. Pick a color, paint cells, build a pattern — then use it as a reference while placing real beads on a pegboard.
 
-Currently, two official plugins are available:
+Think MS Paint meets a bead pegboard.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## Features
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **29×29 grid** rendered on a single HTML Canvas — retina-sharp on all displays
+- **33 Hama bead colors** in a horizontally scrollable palette
+- **Paint & erase** — tap or drag to fill cells; full erase tool
+- **Undo / redo** — entire drag strokes are one undo step (Cmd/Ctrl+Z / Cmd/Ctrl+Shift+Z)
+- **Pencil-only mode** — blocks finger/palm input, lets you draw with Apple Pencil while your hand rests on the screen
+- **Axis labels** — numbered rows and columns so counting beads is easy
+- **Export as PNG** — white background composite, retina resolution
+- **Persistent** — grid, active color, and settings survive page reloads via localStorage
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Stack
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+| | |
+|---|---|
+| Framework | React 18 + TypeScript |
+| Bundler | Vite |
+| Styling | Tailwind CSS v4 |
+| State | Zustand with `persist` middleware |
+| Rendering | HTML Canvas (no DOM cells) |
+| Input | Pointer Events API (finger, pen, mouse) |
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+---
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Running locally
+
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+To use on iPad over your local network:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run dev -- --host
 ```
+
+Then open `http://<your-mac-ip>:5173` in Safari on your iPad.
+
+---
+
+## Project structure
+
+```
+src/
+  store.ts                 # All state + actions (Zustand)
+  lib/
+    grid.ts                # Pure grid math (createGrid, coordsToIndex)
+    renderer.ts            # Canvas draw function + AXIS_LABEL_SIZE
+    colors.ts              # 33 Hama bead colors
+    export.ts              # PNG export (Web Share API on iOS, download on desktop)
+  components/
+    GridCanvas.tsx         # Canvas mount, pointer events, resize observer
+    ColorPalette.tsx       # Fixed controls + scrollable color swatches
+  App.tsx                  # Root layout + keyboard shortcuts
+```
+
+---
+
+## Architecture notes
+
+**Grid state** is a flat `string[]` of length `rows × cols`, indexed as `row * cols + col`. Empty cell = `""`. This lives in Zustand and is the single source of truth — the canvas is just a view over it.
+
+**Undo/redo** uses a snapshot stack. `beginStroke()` is called once on pointer-down and snapshots the current grid. `paintCell` and `eraseCell` modify the grid freely without touching history, so an entire drag stroke is one undo step. Max 100 steps.
+
+**Input** is handled entirely via the Pointer Events API. `touch-action: none` on the canvas tells the browser not to scroll on touch, removing the need for `{ passive: false }` event listeners. `setPointerCapture` keeps events firing even when the pointer drifts outside the canvas.
+
+**Pencil-only mode** filters on `e.pointerType === 'touch'` — blocking fingers and palms while passing through `'pen'` (Apple Pencil) and `'mouse'` (desktop).
