@@ -1,3 +1,4 @@
+import { Link } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { useGridStore } from '../store'
 
@@ -96,7 +97,7 @@ export function GridSizeDialog({ onClose }: GridSizeDialogProps) {
                     : 'border-gray-300 bg-gray-100 text-gray-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400',
                 ].join(' ')}
               >
-                {locked ? '🔒' : '🔓'}
+                {<Link className="w-5 h-5" />}
               </button>
 
               <div className="flex flex-col items-center gap-1">
