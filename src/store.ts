@@ -26,6 +26,7 @@ interface GridStore {
   paintCell: (index: number) => void
   eraseCell: (index: number) => void
   clearGrid: () => void
+  resizeGrid: (rows: number, cols: number) => void
   undo: () => void
   redo: () => void
 }
@@ -72,6 +73,12 @@ export const useGridStore = create<GridStore>()(
         const { grid, rows, cols, past } = get()
         const trimmed = past.length >= MAX_HISTORY ? past.slice(1) : past
         set({ grid: createGrid(rows, cols), past: [...trimmed, grid], future: [] })
+      },
+
+      // Undo history is cleared on resize — restoring a differently-sized grid
+      // array across dimension changes isn't supported.
+      resizeGrid: (newRows, newCols) => {
+        set({ grid: createGrid(newRows, newCols), rows: newRows, cols: newCols, past: [], future: [] })
       },
 
       undo: () => {

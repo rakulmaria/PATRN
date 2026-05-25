@@ -13,7 +13,7 @@ const COLORS = {
   dark:  { gridLine: '#374151', label: '#6b7280' },
   light: { gridLine: '#d1d5db', label: '#9ca3af' },
 }
-const LABEL_FONT = '9px system-ui'
+const LABEL_FONT = '9px "Space Mono", monospace'
 
 export function renderGrid(canvas: HTMLCanvasElement, state: RenderState): void {
   const { grid, rows, cols, theme = 'dark' } = state
