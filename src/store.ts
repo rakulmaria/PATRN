@@ -27,6 +27,7 @@ interface GridStore {
   eraseCell: (index: number) => void
   clearGrid: () => void
   resizeGrid: (rows: number, cols: number) => void
+  nudgeGrid: (dx: number, dy: number) => void
   undo: () => void
   redo: () => void
 }
@@ -73,6 +74,28 @@ export const useGridStore = create<GridStore>()(
         const { grid, rows, cols, past } = get()
         const trimmed = past.length >= MAX_HISTORY ? past.slice(1) : past
         set({ grid: createGrid(rows, cols), past: [...trimmed, grid], future: [] })
+      },
+
+      nudgeGrid: (dx, dy) => {
+        const { grid, rows, cols, past } = get()
+        if (!grid.some(c => c !== '')) return
+        // Refuse if any painted cell would be pushed off the edge.
+        if (dy < 0 && Array.from({ length: cols }, (_, c) => grid[c]).some(Boolean)) return
+        if (dy > 0 && Array.from({ length: cols }, (_, c) => grid[(rows - 1) * cols + c]).some(Boolean)) return
+        if (dx < 0 && Array.from({ length: rows }, (_, r) => grid[r * cols]).some(Boolean)) return
+        if (dx > 0 && Array.from({ length: rows }, (_, r) => grid[r * cols + cols - 1]).some(Boolean)) return
+        const trimmed = past.length >= MAX_HISTORY ? past.slice(1) : past
+        const next = createGrid(rows, cols)
+        for (let row = 0; row < rows; row++) {
+          for (let col = 0; col < cols; col++) {
+            const srcRow = row - dy
+            const srcCol = col - dx
+            if (srcRow >= 0 && srcRow < rows && srcCol >= 0 && srcCol < cols) {
+              next[row * cols + col] = grid[srcRow * cols + srcCol]
+            }
+          }
+        }
+        set({ grid: next, past: [...trimmed, grid], future: [] })
       },
 
       // Undo history is cleared on resize — restoring a differently-sized grid

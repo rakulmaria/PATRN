@@ -1,8 +1,7 @@
-import { useRef, useCallback, useEffect, useState } from 'react'
+import { useRef, useCallback, useEffect } from 'react'
 import { GridCanvas } from './components/GridCanvas'
 import { ColorPalette } from './components/ColorPalette'
 import { LeftToolbar } from './components/LeftToolbar'
-import { GridSizeDialog } from './components/GridSizeDialog'
 import { downloadGridAsPng } from './lib/export'
 import { useGridStore } from './store'
 
@@ -11,13 +10,10 @@ export default function App() {
   const theme = useGridStore(s => s.theme)
   const rows  = useGridStore(s => s.rows)
   const cols  = useGridStore(s => s.cols)
-  const [showSizeDialog, setShowSizeDialog] = useState(false)
 
-  const handleExport = useCallback(() => {
-    if (canvasRef.current) downloadGridAsPng(canvasRef.current)
+  const handleExport = useCallback((filename: string) => {
+    if (canvasRef.current) downloadGridAsPng(canvasRef.current, filename)
   }, [])
-
-  const handleResize = useCallback(() => setShowSizeDialog(true), [])
 
   // Keyboard shortcuts — reads from store directly so this effect never re-runs.
   useEffect(() => {
@@ -38,7 +34,7 @@ export default function App() {
   return (
     <div className={`flex h-dvh w-screen flex-col bg-gray-50 dark:bg-gray-900 ${theme === 'dark' ? 'dark' : ''}`}>
       <div className="flex flex-1 min-h-0 flex-row">
-        <LeftToolbar onExport={handleExport} onResize={handleResize} />
+        <LeftToolbar onExport={handleExport} />
 
         <div
           className="flex flex-1 min-w-0 items-center justify-center p-4"
@@ -60,7 +56,7 @@ export default function App() {
       <footer className="shrink-0 border-t border-gray-200 py-2 text-center text-xs text-gray-400 dark:border-gray-800 dark:text-gray-600">
         © {new Date().getFullYear()} created by{' '}
         <a
-          href="https://www.rakulmaria.com"
+          href="https://www.rakulmaria.com/about"
           target="_blank"
           rel="noopener noreferrer"
           className="underline hover:text-gray-600 dark:hover:text-gray-400"
@@ -69,7 +65,6 @@ export default function App() {
         </a>
       </footer>
 
-      {showSizeDialog && <GridSizeDialog onClose={() => setShowSizeDialog(false)} />}
     </div>
   )
 }
