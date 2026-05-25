@@ -2,18 +2,22 @@ export interface RenderState {
   grid: string[]
   rows: number
   cols: number
+  theme?: 'light' | 'dark'
 }
 
 // Margin reserved for axis labels on the left and top of the canvas.
 // Exported so coordsToIndex can subtract it before mapping to cell indices.
 export const AXIS_LABEL_SIZE = 20
 
-const GRID_LINE_COLOR = '#374151'
-const LABEL_COLOR = '#6b7280'
+const COLORS = {
+  dark:  { gridLine: '#374151', label: '#6b7280' },
+  light: { gridLine: '#d1d5db', label: '#9ca3af' },
+}
 const LABEL_FONT = '9px system-ui'
 
 export function renderGrid(canvas: HTMLCanvasElement, state: RenderState): void {
-  const { grid, rows, cols } = state
+  const { grid, rows, cols, theme = 'dark' } = state
+  const { gridLine: GRID_LINE_COLOR, label: LABEL_COLOR } = COLORS[theme]
   const dpr = window.devicePixelRatio || 1
   const logicalW = canvas.clientWidth
   const logicalH = canvas.clientHeight

@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Make dark: variants respond to an ancestor .dark class, not prefers-color-scheme */
+@variant dark (&:where(.dark, .dark *));
+
 *, *::before, *::after {
   box-sizing: border-box;
 }

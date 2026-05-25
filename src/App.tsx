@@ -6,6 +6,7 @@ import { useGridStore } from './store'
 
 export default function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const theme = useGridStore(s => s.theme)
 
   const handleExport = useCallback(() => {
     if (canvasRef.current) downloadGridAsPng(canvasRef.current)
@@ -28,7 +29,7 @@ export default function App() {
   }, [])
 
   return (
-    <div className="flex h-dvh w-screen flex-col bg-gray-900">
+    <div className={`flex h-dvh w-screen flex-col bg-gray-50 dark:bg-gray-900 ${theme === 'dark' ? 'dark' : ''}`}>
       <div
         className="flex flex-1 min-h-0 items-center justify-center p-4"
         style={{ containerType: 'size' }}
@@ -38,7 +39,7 @@ export default function App() {
         </div>
       </div>
 
-      <div className="shrink-0 border-t border-gray-800 px-2">
+      <div className="shrink-0 border-t border-gray-200 dark:border-gray-800 px-2">
         <ColorPalette onExport={handleExport} />
       </div>
     </div>

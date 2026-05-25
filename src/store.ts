@@ -15,9 +15,11 @@ interface GridStore {
   past: string[][]
   future: string[][]
   pencilOnly: boolean
+  theme: 'light' | 'dark'
   setActiveColor: (color: string) => void
   setTool: (tool: 'paint' | 'erase') => void
   setPencilOnly: (v: boolean) => void
+  setTheme: (theme: 'light' | 'dark') => void
   // Call once at the start of each paint/erase gesture — snapshots the current
   // grid into history so the whole stroke is one undo step.
   beginStroke: () => void
@@ -39,10 +41,12 @@ export const useGridStore = create<GridStore>()(
       past: [],
       future: [],
       pencilOnly: false,
+      theme: 'dark' as const,
 
       setActiveColor: (color) => set({ activeColor: color }),
       setTool: (tool) => set({ tool }),
       setPencilOnly: (pencilOnly) => set({ pencilOnly }),
+      setTheme: (theme) => set({ theme }),
 
       beginStroke: () => {
         const { grid, past } = get()
@@ -101,6 +105,7 @@ export const useGridStore = create<GridStore>()(
         cols: state.cols,
         activeColor: state.activeColor,
         pencilOnly: state.pencilOnly,
+        theme: state.theme,
       }),
     },
   ),

@@ -7,15 +7,15 @@ export const GridCanvas = forwardRef<HTMLCanvasElement>(function GridCanvas(_, r
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const isDrawingRef = useRef(false)
 
-  const { grid, rows, cols } = useGridStore()
+  const { grid, rows, cols, theme } = useGridStore()
 
   useImperativeHandle(ref, () => canvasRef.current!, [])
 
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
-    renderGrid(canvas, { grid, rows, cols })
-  }, [grid, rows, cols])
+    renderGrid(canvas, { grid, rows, cols, theme })
+  }, [grid, rows, cols, theme])
 
   useEffect(() => {
     const canvas = canvasRef.current
